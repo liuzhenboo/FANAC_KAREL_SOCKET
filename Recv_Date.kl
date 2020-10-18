@@ -1,0 +1,135 @@
+PROGRAM wait_recv
+%RWACCESS
+%STACKSIZE = 4000
+%NOPAUSE = ERROR+COMMAND+TPENABLE
+%NOLOCKGROUP
+%ALPHABETIZE
+%NOABORT = ERROR+TPENABLE
+%NOPAUSESHFT
+VAR
+n : INTEGER
+entry:INTEGER
+n_bytes : INTEGER
+str,x_str,y_str,z_str,w_str,p_str,r_str,id_str: STRING[20]
+x_pos, y_pos,z_pos,w_pos,p_pos,r_pos,ClowPos,id : REAL
+offset_pos : XYZWPR
+STATUS : INTEGER
+file_var : FILE
+i,j : INTEGER
+offset_data : STRING[250]
+len : INTEGER
+BEGIN 
+n=40
+SET_FILE_ATR(file_var,ATR_IA)
+SET_FILE_ATR(file_var,ATR_READAHD,2)
+OPEN FILE file_var('rw','C3:')
+	offset_data = ''
+	j = 0
+	--STATUS=SET_PORT_ATR (PORT_2, ATR_READAHD, 1)
+	REPEAT
+	BYTES_AHEAD(file_var,n_bytes,STATUS)
+	
+	UNTIL n_bytes>=1
+	IF(n_bytes>=1)THEN
+		WRITE(' Date Receive Successful ',CR)
+	ENDIF
+	 DELAY 100
+	REPEAT
+		READ file_var(str::1)
+		STATUS = IO_STATUS(file_var)
+		offset_data = offset_data + str
+		j =j+1
+		n_bytes=n_bytes-1
+	UNTIL (STATUS<>0) OR (n_bytes=0)
+	
+	WRITE(' j = ',j,CR)
+	CLOSE FILE  file_var
+	 WRITE(' Date Save Successful ',CR)
+	 
+	IF(offset_data='110')  THEN
+		SET_VAR(entry,'*numreg*', '$NUMREG[2]' ,1, STATUS)
+		WRITE(' GET 110! ',CR)
+	ELSE
+		SET_VAR(entry,'*numreg*', '$NUMREG[2]' ,0, STATUS)
+	
+	
+	i = 1
+    id_str = ''
+	x_str = ''
+	y_str = ''
+	z_str = ''
+	w_str = ''
+	p_str = ''
+	r_str = ''
+	REPEAT
+	id_str = id_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	--DEBUG
+	len = STR_LEN(offset_data)
+	IF(id_str='310') THEN
+		WRITE('GET 310,..',CR)
+	ELSE
+		WRITE('Receive wrong data structure!!!')
+	WRITE(' id_str recv successful ',CR)
+	ENDIF
+	i = i+1
+	REPEAT
+	x_str = x_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	WRITE(' x_str recv successful ',CR)
+	i = i+1
+	CNV_STR_REAL(p_str,p_pos)	
+	REPEAT
+	y_str = y_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	WRITE(' y_str recv successful ',CR)
+	i = i+1
+	REPEAT
+	z_str = z_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	WRITE(' z_str recv successful ',CR)
+	i = i+1
+	REPEAT
+	w_str = w_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	WRITE(' w_str recv successful ',CR)
+	i = i+1
+	REPEAT
+	p_str = p_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = ','
+	WRITE(' p_str recv successful ',CR)
+	i = i+1
+	REPEAT
+	r_str = r_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	UNTIL SUB_STR(offset_data,i,1) = '.'
+	--r_str = r_str + SUB_STR(offset_data,i,1)
+	--i = i+1
+	--r_str = r_str+'.' 
+	r_str = r_str + SUB_STR(offset_data,i,1)
+	i = i+1
+	r_str = r_str + SUB_STR(offset_data,i,1)
+	WRITE(' r_str recv successful ',CR)
+	--CNV_STR_REAL(id_str,id)
+	CNV_STR_REAL(x_str,x_pos)
+	CNV_STR_REAL(y_str,y_pos)	
+	CNV_STR_REAL(z_str,z_pos)
+	CNV_STR_REAL(w_str,w_pos)
+	CNV_STR_REAL(p_str,p_pos)	
+	CNV_STR_REAL(r_str,r_pos)
+	offset_pos.x = x_pos
+	offset_pos.y = y_pos
+	offset_pos.z = z_pos
+	offset_pos.w = w_pos
+	offset_pos.p = p_pos
+	offset_pos.r = r_pos
+	SET_POS_REG(2,offset_pos,STATUS)
+	DELAY 500
+	ENDIF
+END wait_recv

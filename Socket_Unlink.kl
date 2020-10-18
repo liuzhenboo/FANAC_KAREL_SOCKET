@@ -1,0 +1,20 @@
+PROGRAM Socket_Un
+%RWACCESS
+%STACKSIZE = 4000
+%NOPAUSE = ERROR+COMMAND+TPENABLE
+%NOLOCKGROUP
+%ALPHABETIZE
+VAR
+file_var : FILE
+stat:INTEGER
+STATUS : INTEGER
+BEGIN
+      stat=0
+      WRITE('Unlink..',CR)
+      MSG_DISCO('C3:',STATUS)
+	IF STATUS = 0 THEN
+      WRITE('Socket_Unlink Successful',STATUS,CR)
+	ELSE
+	  WRITE('Socket_Unlink Failed',STATUS,CR)
+	ENDIF
+END Socket_Un	

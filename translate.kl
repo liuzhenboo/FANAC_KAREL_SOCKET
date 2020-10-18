@@ -1,0 +1,191 @@
+PROGRAM DATA_TRANS
+%COMMENT = 'Socket_TEST'
+%NOPAUSE = ERROR+COMMAND+TPENABLE
+%NOLOCKGROUP
+%NOPAUSESHFT
+--%NOABORT = ERROR+COMMAND+TPENABLE
+%NOABORT = ERROR+TPENABLE
+VAR
+ connect_stat    :INTEGER
+ socket_id   :STRING[10]
+ STATUS      :INTEGER
+ file_var    :FILE
+ b_connet    :BOOLEAN
+ int_value   :INTEGER
+ real_value  :REAL
+ str_value   :STRING[10]
+ str_send    :STRING[20]
+ str_recv     :STRING[20]
+ str_temp    :STRING[20]
+ int_nofbtyes: INTEGER
+ int_i            :INTEGER
+---------------------------------------------------------------------
+-------ROUTINE SOCKET_CON
+-------FUNCTION Socket Connect
+---------------------------------------------------------------------
+ROUTINE SOCKET_CON(socket_id :STRING)
+BEGIN 
+      FORCE_SPMENU(TP_PANEL,SPI_TPUSER,1)
+           SET_FILE_ATR(file_var,ATR_IA)
+          --SET_VAR(ertry, '*SYSTEM*','$HOSTC_CFG[1].$SERVER_PORT',5200，STATUS)
+           WRITE('Wait Connecting...',CR)
+           --WRITE('Connect successful ',CR)
+           MSG_CONNECT(socket_id,STATUS)
+           --MSG_CONNECT('C3:',STATUS)
+           IF STATUS = 0 THEN
+           	WRITE('Connect successful ',CR)
+            b_connet = TRUE
+           ELSE
+           	 --MSG_DISCO(socket_id,STATUS)
+           	WRITE('Connect failed00 ! ',STATUS,CR)
+           	b_connet = FALSE
+            POST_ERR(38092,socket_id+' SOCKET 连接失败 !!! ',0,2)  
+           ENDIF               
+END SOCKET_CON
+---------------------------------------------------------------------
+-------ROUTINE SOCKET_DISC
+-------FUNCTION Socket disconnect
+---------------------------------------------------------------------
+ROUTINE SOCKET_DISC(socket_id :STRING)
+BEGIN
+     WRITE('Disconnect ...',CR)
+          MSG_DISCO(socket_id,STATUS)
+          --MSG_DISCO('C3:',STATUS)
+          IF STATUS = 0 THEN
+                 WRITE('Socket disconnect Successful',CR)
+                  b_connet = FALSE
+     ELSE
+                 WRITE('Socket disconnect Failed',STATUS,CR)
+            b_connet = TRUE
+            POST_ERR(38092,socket_id+' SOCKET 断开失败 !!! ',0,2)  
+          ENDIF
+END SOCKET_DISC
+---------------------------------------------------------------------
+-------Routine SEND_DATA
+-------FUNCITON DATA SEND
+--------------------------------------------------------------------- 
+ROUTINE SEND_DATA(str_send: STRING)
+BEGIN
+      SET_FILE_ATR(file_var,ATR_IA)        --交互式
+      SET_FILE_ATR(file_var,ATR_READAHD,2) --缓存区256
+      OPEN FILE file_var('rw',socket_id)
+      STATUS = IO_STATUS(file_var)
+           IF STATUS = 0 THEN 
+                 --WRITE(socket_id,'  file open  successful.',CR)
+           ELSE
+                 WRITE(socket_id,' file open failed.')
+           ENDIF
+           WRITE file_var( str_send)
+           WRITE file_var(CR)
+           WRITE(socket_id,' data send successful.',CR)
+           WRITE('Send Data : ', str_send,CR)
+           CLOSE FILE  file_var
+           
+END SEND_DATA
+
+ROUTINE RECV_DATA
+
+BEGIN
+
+      SET_FILE_ATR(file_var,ATR_IA)
+      SET_FILE_ATR(file_var,ATR_READAHD,2)
+OPEN FILE file_var('rw',socket_id)
+STATUS = IO_STATUS(file_var)
+IF (STATUS = 0) THEN
+-- WRITE(socket_id,' file open  successful.',CR)
+ELSE
+                 WRITE(socket_id,' file open  Failed.',CR)
+ABORT
+ENDIF
+
+      --CHK_ERR(STATUS)
+
+           int_nofbtyes = 10
+           WRITE(socket_id,' receiving data ...',CR)
+WHILE (int_nofbtyes = 0) DO
+          BYTES_AHEAD(file_var,int_nofbtyes,STATUS)
+IF (STATUS = 0) AND (int_nofbtyes > 0) THEN
+--WRITE(socket_id,'  read buffer successful.',int_nofbtyes,CR)
+              ENDIF
+               DELAY 10
+           ENDWHILE
+
+             str_recv = ''
+             int_i = 1
+             
+--int_nofbtyes = 10
+REPEAT
+READ file_var(str_temp::1)
+STATUS = IO_STATUS(file_var)
+IF STATUS = 0  THEN
+--WRITE(socket_id,' read successful;  byte : ',int_i,CR)
+ELSE
+                     WRITE(socket_id,' read file failed;  byte : ',int_i,CR)
+ABORT
+               ENDIF
+           --CHK_ERR(STATUS)
+
+           int_i = int_i + 1
+      int_nofbtyes = int_nofbtyes-1
+          str_recv = str_recv + str_temp
+UNTIL int_nofbtyes = 0
+
+    SET_STR_REG(2,str_recv, STATUS)           
+     --CHK_ERR(STATUS)
+    SET_SREG_CMT(2,'RecvData:',STATUS)
+    --CHK_ERR(STATUS)
+
+              WRITE('Recv data : ' ,str_recv,CR)
+              WRITE('Save Data Successful . ',CR)
+CLOSE FILE  file_var
+END RECV_DATA
+
+---------------------------------------------------------------------
+-------Main Program
+--------------------------------------------------------------------- 
+  BEGIN
+  FORCE_SPMENU(TP_PANEL,SPI_TPUSER,1)
+  WRITE(CHR(128),CHR(137))
+  GET_TPE_PRM(1,1,int_value,real_value,str_value,status)--1连接，other断开
+     IF status <> 0 THEN
+      POST_ERR(38092,socket_id+'参数1 连接未定义 ',0,2)
+      ABORT
+     ENDIF
+     connect_stat = int_value
+  GET_TPE_PRM(2,3,int_value,real_value,str_value,status)--标号
+   IF status <> 0 THEN
+      POST_ERR(38092,socket_id+'参数2 标签号未定义 ',0,2)
+      ABORT
+   ENDIF
+    socket_id = str_value + ':'
+  GET_TPE_PRM(3,3,int_value,real_value,str_value,status)--数据
+   IF status <> 0 THEN
+      POST_ERR(38092,socket_id+'参数3 数据未定义 ',0,2)
+      ABORT
+     ENDIF
+    IF connect_stat = 1 THEN  
+
+----------------Socket Connect
+    SOCKET_CON(socket_id)
+    ENDIF
+    IF connect_stat = 2 THEN  
+----------------Socket disConnect    
+    SOCKET_DISC(socket_id) 
+    DELAY 200 
+    ABORT 
+    ENDIF
+  
+   str_send = str_value
+  
+----------------DATA SEND
+  --SEND_DATA(str_send)
+  --MSG_CONNECT('C3:',STATUS)
+  --RECV_DATA
+  --SOCKET_DISC(socket_id) 
+  --DELAY 10
+ -- ABORT 
+      
+  END DATA_TRANS
+  
+  
+  

@@ -1,0 +1,62 @@
+PROGRAM Send
+%RWACCESS
+%STACKSIZE = 4000
+%NOPAUSE = ERROR+COMMAND+TPENABLE
+%NOLOCKGROUP
+%ALPHABETIZE
+VAR
+file_var : FILE
+stat:INTEGER
+robo_data: STRING[50]
+get_pos : XYZWPR
+STATUS,STATUS1 : INTEGER
+x_pos, y_pos,z_pos,w_pos,p_pos,r_pos: REAL
+x_str,y_str,z_str,w_str,p_str,r_str: STRING[20]
+str: STRING[60]
+
+len, num:INTEGER
+-- read PR[1]
+BEGIN
+	   len = 1
+	   num = 2
+         stat=0
+         get_pos = GET_POS_REG(2, STATUS1, 1)
+         str ='000,'
+         x_pos = get_pos.x
+         y_pos = get_pos.y
+         z_pos = get_pos.z
+         w_pos = get_pos.w
+         p_pos = get_pos.p
+         r_pos = get_pos.r
+         CNV_REAL_STR(x_pos, len, num,x_str)
+         str = str + x_str + ','
+         CNV_REAL_STR(y_pos, len, num,y_str)
+         str = str + y_str + ','
+         CNV_REAL_STR(z_pos, len, num,z_str)
+         str = str + z_str + ','
+         CNV_REAL_STR(w_pos, len, num,w_str)
+         str = str + w_str + ','
+         CNV_REAL_STR(p_pos, len, num,p_str)
+         str = str + p_str + ','
+         CNV_REAL_STR(r_pos, len, num,r_str)
+         str = str + r_str
+         robo_data = str
+         --robo_data1 = str1
+          --robo_data2 = str2
+	     SET_FILE_ATR(file_var,ATR_IA)
+	     SET_FILE_ATR(file_var,ATR_READAHD,2) --»º´æÇø256 ATR_READAHD
+		 --open file 
+	     OPEN FILE file_var('rw','C3:')
+	     STATUS = IO_STATUS(file_var)
+     IF STATUS = 0 THEN	 
+	     WRITE  file_var(robo_data)
+	     --WRITE  file_var(robo_data1)
+	     --WRITE  file_var(robo_data2)
+		 WRITE(' WRITE file 310 successful ',CR)
+	     STATUS = IO_STATUS(file_var)
+	     CLOSE FILE  file_var
+		 WRITE(' Close file_var ',CR)
+	ELSE
+         WRITE(' Open File Failed ',CR)
+    ENDIF
+END Send

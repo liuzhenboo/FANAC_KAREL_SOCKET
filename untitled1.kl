@@ -1,0 +1,30 @@
+PROGRAM Send_210
+%RWACCESS
+%STACKSIZE = 4000
+%NOPAUSE = ERROR+COMMAND+TPENABLE
+%NOLOCKGROUP
+%ALPHABETIZE
+VAR
+file_var : FILE
+stat:INTEGER
+robo_data : STRING[20]
+STATUS : INTEGER
+BEGIN
+         stat=0
+         robo_data ='310'
+	     SET_FILE_ATR(file_var,ATR_IA)
+		 --open file 将文件变量与通讯端口相关�?
+	     OPEN FILE file_var('rw','C3::')
+	     STATUS = IO_STATUS(file_var)
+     IF STATUS = 0 THEN	 
+	     WRITE  file_var(robo_data)
+		 WRITE(' WRITE file 310 successful ',CR)
+	     STATUS = IO_STATUS(file_var)
+	     CLOSE FILE  file_var
+		 WRITE(' Close file_var ',CR)
+	ELSE
+         WRITE(' Open File Failed ',CR)
+    ENDIF
+END Send_210
+
+313333302E312C3433362E312C3731332E312C302E30372C2D35392E312C2D302E30362A
